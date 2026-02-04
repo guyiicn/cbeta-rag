@@ -1,0 +1,15 @@
+# .gitignore
+
+# Python
+__pycache__/
+*.pyc
+.python-version
+
+# Qdrant data
+data/qdrant/
+
+# Logs
+*.log
+
+# API keys
+.env

@@ -1,0 +1,39 @@
+services:
+  qdrant:
+    image: qdrant/qdrant:latest
+    container_name: cbeta-qdrant
+    ports:
+      - "6333:6333"
+    volumes:
+      - ./data/qdrant:/qdrant/storage
+    networks:
+      - cbeta-network
+    restart: unless-stopped
+
+  api:
+    build: .
+    container_name: cbeta-api
+    ports:
+      - "8000:8000"
+    volumes:
+      - /home/nvidia/cbeta:/data/cbeta:ro
+      - ./app:/app/app:ro
+    environment:
+      - QDRANT_HOST=qdrant
+      - OLLAMA_BASE_URL=http://host.docker.internal:11434
+    env_file:
+      - .env
+    depends_on:
+      - qdrant
+    networks:
+      - cbeta-network
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
+    dns:
+      - 8.8.8.8
+      - 8.8.4.4
+    restart: unless-stopped
+
+networks:
+  cbeta-network:
+    driver: bridge
