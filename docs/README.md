@@ -12,6 +12,16 @@
 | **部署环境** | NVIDIA Jetson AGX Orin |
 | **API 兼容** | OpenAI Chat Completions |
 
+## 数据源
+
+**CBETA（中華電子佛典）**是本项目的数据来源。
+
+- **官方网站**: https://www.cbeta.org
+- **佛典下载地址**: http://cbeta.org/ebooks
+- **GitHub**: https://github.com/cbeta-org/xml-p5
+
+**许可协议**: CC BY-NC-SA 3.0 TW（创作共用-非商业性使用-相同方式共享）
+
 ## 系统架构
 
 ```
