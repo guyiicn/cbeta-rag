@@ -16,7 +16,7 @@ Create `~/.config/cbeta-rag/config.json` with the following content:
 ```json
 {
   "api_url": "http://192.168.50.12:8000",
-  "api_key": "cbeta-rag-secret-key-2024",
+  "api_key": "your-api-key",
   "default_top_k": 5
 }
 ```
@@ -26,7 +26,7 @@ Create `~/.config/cbeta-rag/config.json` with the following content:
 | Field | Description | Example |
 |-------|-------------|---------|
 | `api_url` | Base URL of the CBETA RAG API server | `http://192.168.50.12:8000` |
-| `api_key` | Authentication key for API access | `cbeta-rag-secret-key-2024` |
+| `api_key` | Authentication key for API access | `your-api-key` |
 | `default_top_k` | Default number of search results to return | `5` |
 
 ### Step 3: Verify Configuration

@@ -13,7 +13,7 @@ curl -s http://localhost:8000/health | python3 -m json.tool
 
 # 3. 查看统计信息
 curl -s http://localhost:8000/v1/stats \
-  -H 'Authorization: Bearer cbeta-rag-secret-key-2024' | python3 -m json.tool
+  -H 'Authorization: Bearer your-api-key' | python3 -m json.tool
 
 # 4. 检查 Ollama
 curl -s http://localhost:11434/api/tags | python3 -c "import sys,json; print(f'Ollama 模型数: {len(json.load(sys.stdin)[\"models\"])}')"
@@ -64,13 +64,13 @@ docker compose up -d api --force-recreate
 ```bash
 # 测试向量搜索
 time curl -s 'http://localhost:8000/v1/search' \
-  -H 'Authorization: Bearer cbeta-rag-secret-key-2024' \
+  -H 'Authorization: Bearer your-api-key' \
   -H 'Content-Type: application/json' \
   -d '{"query": "般若", "top_k": 8, "rerank": false}'
 
 # 测试完整 RAG
 time curl -s 'http://localhost:8000/v1/chat/completions' \
-  -H 'Authorization: Bearer cbeta-rag-secret-key-2024' \
+  -H 'Authorization: Bearer your-api-key' \
   -H 'Content-Type: application/json' \
   -d '{"messages": [{"role": "user", "content": "什么是般若？"}], "rag": true}'
 ```
@@ -148,7 +148,7 @@ docker compose up -d api --force-recreate
 
 # 验证
 curl -s http://localhost:8000/v1/stats \
-  -H 'Authorization: Bearer cbeta-rag-secret-key-2024' | grep top_k
+  -H 'Authorization: Bearer your-api-key' | grep top_k
 ```
 
 ### 修改 System Prompt

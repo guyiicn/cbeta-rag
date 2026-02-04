@@ -45,40 +45,40 @@ PRESET_PROVIDERS: Dict[str, Dict[str, str]] = {
 
 class Settings(BaseSettings):
     # API Authentication
-    API_KEY: str = "changeme"
+    API_KEY: str = ""  # Set via environment variable or .env file
     API_HOST: str = "0.0.0.0"
     API_PORT: int = 8000
-    
+
     # Default LLM Provider (when not specified in request)
     DEFAULT_PROVIDER: str = "ollama"
-    
+
     # API Keys for each provider (set via env vars)
     OPENAI_API_KEY: str = ""
     ANTHROPIC_API_KEY: str = ""
     DEEPSEEK_API_KEY: str = ""
-    QWEN_API_KEY: str = ""           # 阿里云 DashScope API Key
-    GLM_API_KEY: str = ""            # 智谱 GLM API Key
-    GEMINI_API_KEY: str = ""         # Google AI Studio API Key
+    QWEN_API_KEY: str = ""  # 阿里云 DashScope API Key
+    GLM_API_KEY: str = ""  # 智谱 GLM API Key
+    GEMINI_API_KEY: str = ""  # Google AI Studio API Key
     OPENROUTER_API_KEY: str = ""
     SILICONFLOW_API_KEY: str = ""
-    
+
     # Local Ollama (always available)
     OLLAMA_BASE_URL: str = "http://host.docker.internal:11434"
     LOCAL_LLM_MODEL: str = "qwen3:8b"
-    
+
     # Embedding (always local Ollama)
     EMBEDDING_MODEL: str = "bge-m3:latest"
     RERANKER_MODEL: str = "linux6200/bge-reranker-v2-m3:latest"
-    
+
     # Qdrant
     QDRANT_HOST: str = "qdrant"
     QDRANT_PORT: int = 6333
     COLLECTION_NAME: str = "cbeta"
     VECTOR_DIM: int = 1024
-    
+
     # CBETA
     CBETA_DATA_PATH: str = "/data/cbeta/cbeta-text"
-    
+
     # RAG
     DEFAULT_TOP_K: int = 10
     RERANK_TOP_K: int = 5

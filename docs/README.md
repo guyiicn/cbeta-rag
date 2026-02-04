@@ -58,7 +58,7 @@ docker compose up -d
 
 # 2. 测试 API
 curl -X POST 'http://localhost:8000/v1/chat/completions' \
-  -H 'Authorization: Bearer cbeta-rag-secret-key-2024' \
+  -H 'Authorization: Bearer your-api-key' \
   -H 'Content-Type: application/json' \
   -d '{"messages": [{"role": "user", "content": "什么是般若？"}], "rag": true}'
 
