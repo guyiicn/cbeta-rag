@@ -16,6 +16,10 @@ class LLMServiceDegraded(Exception):
     pass
 
 
+# 降级链配置：主 API -> deepseek -> ollama
+FALLBACK_CHAIN = ["glm", "ollama"]
+
+
 @dataclass
 class LLMConfig:
     """LLM 配置，支持预设或自定义"""
@@ -26,6 +30,7 @@ class LLMConfig:
     # 降级标记
     is_fallback: bool = False
     original_provider: str = ""
+    fallback_level: int = 0  # 降级层级: 0=主, 1=deepseek, 2=ollama
     
     @classmethod
     def from_request(
@@ -56,15 +61,24 @@ class LLMConfig:
         
         return config
     
-    def to_fallback(self) -> "LLMConfig":
-        """创建 Ollama 降级配置"""
+    def to_fallback(self, level: int = 1) -> "LLMConfig":
+        """创建降级配置
+        level 1: deepseek
+        level 2: ollama (本地)
+        """
+        if level >= len(FALLBACK_CHAIN):
+            level = len(FALLBACK_CHAIN) - 1
+        
+        fallback_provider = FALLBACK_CHAIN[level]
+        
         fallback = LLMConfig()
-        fallback.provider = "ollama"
-        fallback.base_url = PRESET_PROVIDERS["ollama"]["base_url"]
-        fallback.api_key = ""
-        fallback.model = PRESET_PROVIDERS["ollama"]["default_model"]
+        fallback.provider = fallback_provider
+        fallback.base_url = PRESET_PROVIDERS[fallback_provider]["base_url"]
+        fallback.api_key = settings.get_api_key(fallback_provider)
+        fallback.model = PRESET_PROVIDERS[fallback_provider]["default_model"]
         fallback.is_fallback = True
-        fallback.original_provider = self.provider
+        fallback.original_provider = self.original_provider or self.provider
+        fallback.fallback_level = level
         return fallback
 
 
@@ -92,31 +106,70 @@ class LLMService:
         stream: bool = False,
         allow_fallback: bool = True
     ) -> str | AsyncGenerator[str, None]:
-        """调用 LLM，支持自动降级到 Ollama"""
+        """调用 LLM，支持多级降级: 主 API -> deepseek -> ollama"""
         if config is None:
             config = LLMConfig.from_request()
         
-        # 如果已经是 Ollama，直接调用不降级
+        # 如果已经是 ollama（最后一级），直接调用不降级
         if config.provider == "ollama":
             return await self._call_llm(messages, config, stream)
         
-        # 尝试调用远程 API
+        # 尝试调用当前配置的 API
         try:
             return await self._call_llm(messages, config, stream)
         
         except FALLBACK_ERRORS as e:
             if allow_fallback and self.fallback_enabled:
-                print(f"[降级] {config.provider} 连接失败 ({type(e).__name__})，切换到 Ollama")
-                fallback_config = config.to_fallback()
-                return await self._call_llm(messages, fallback_config, stream)
+                return await self._try_fallback(
+                    messages, config, stream, 
+                    error_msg=f"连接失败 ({type(e).__name__})"
+                )
             raise
         
         except httpx.HTTPStatusError as e:
             if allow_fallback and self.fallback_enabled and e.response.status_code in FALLBACK_STATUS_CODES:
-                print(f"[降级] {config.provider} 返回 {e.response.status_code}，切换到 Ollama")
-                fallback_config = config.to_fallback()
-                return await self._call_llm(messages, fallback_config, stream)
+                return await self._try_fallback(
+                    messages, config, stream,
+                    error_msg=f"返回 {e.response.status_code}"
+                )
             raise
+    
+    async def _try_fallback(
+        self,
+        messages: List[Dict[str, str]],
+        config: LLMConfig,
+        stream: bool,
+        error_msg: str
+    ) -> str | AsyncGenerator[str, None]:
+        """尝试降级调用"""
+        next_level = config.fallback_level + 1
+        
+        # 尝试降级链中的每个 provider
+        while next_level <= len(FALLBACK_CHAIN):
+            fallback_config = config.to_fallback(level=next_level)
+            fallback_name = fallback_config.provider
+            
+            print(f"[降级] {config.provider} {error_msg}，尝试 {fallback_name} (level {next_level})")
+            
+            try:
+                return await self._call_llm(messages, fallback_config, stream)
+            except (httpx.HTTPStatusError, *FALLBACK_ERRORS) as e:
+                if isinstance(e, httpx.HTTPStatusError):
+                    if e.response.status_code not in FALLBACK_STATUS_CODES:
+                        raise
+                    error_msg = f"返回 {e.response.status_code}"
+                else:
+                    error_msg = f"连接失败 ({type(e).__name__})"
+                
+                config = fallback_config
+                next_level += 1
+                
+                # 如果是最后一级 (ollama)，直接抛出异常
+                if config.provider == "ollama":
+                    print(f"[降级失败] 所有服务均不可用")
+                    raise
+        
+        raise LLMServiceDegraded("所有 LLM 服务均不可用")
     
     async def _call_llm(
         self,
@@ -163,7 +216,7 @@ class LLMService:
             
             # 如果是降级的响应，添加标记
             if config.is_fallback:
-                content = f"[使用本地模型 {config.model} 回答，原服务 {config.original_provider} 暂时不可用]\n\n{content}"
+                content = f"[使用本地模型 {config.model}，原服务 {config.original_provider} 暂时不可用]\n\n{content}"
             
             return content
     
